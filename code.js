@@ -213,11 +213,9 @@ document.getElementById("about").onclick = function() {
     document.getElementById("homeBtn").hidden = false;
     notify("Currently under Development. Will be available soon...")
 }
-document.getElementById("viewOrders").onclick = function() {
-    notify("Currently under Development. Will be available soon...")
-}
 document.getElementById("preOrder").onclick = function() {
     setScreen("preOrderScrn")
+    document.getElementById("homeBtn").hidden = false;
 }
 //Menu
 var menu;
@@ -378,7 +376,7 @@ document.getElementById("orderSubmitBtn").onclick = function() {
             }
             document.getElementById("orderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("orderSubmitBtn").disabled = true;
-            createRecord("orders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, used: false}, function(record) {
+            createRecord("orders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
                     user: localStorage.username,
@@ -489,7 +487,7 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
             }
             document.getElementById("preOrderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("preOrderSubmitBtn").disabled = true;
-            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, used: false}, function(record) {
+            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
                     user: localStorage.username,
@@ -521,6 +519,56 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
     } else {
         notify("Please fill up all the spaces")
     }
+}
+//View order scrn
+document.getElementById("viewOrders").onclick = function() {
+    setScreen("viewOrderScrn");
+    document.getElementById("homeBtn").hidden = false;
+    document.getElementById("viewOrderHolder").innerHTML = "Loading... Please wait..."
+    let loading = 0;
+    var yourOrders = {
+        "Order": [],
+        "Pre Order": []
+    }
+    readRecords("orders", {user: localStorage.username, date: getFullDates()}, function(records) {
+        loading  = parseInt(loading) + 1;
+        for (let yo = 0; yo < records.length; yo++) {
+            yourOrders["Order"].push(records[yo]);
+        }
+    });
+    readRecords("preOrders", {user: localStorage.username, date: getFullDates()}, function(records) {
+        loading = parseInt(loading) + 1;
+        let typePreOrder = []
+        for (let yo = 0; yo < records.length; yo++) {
+            yourOrders["Pre Order"].push(records[yo]);
+        }
+    });
+    function createViewOrder(data) {
+        let viewOrderBtn = document.createElement("button");
+        console.log("{\"id\":"+data.id+",\"type\":\""+data.type+"\"}")
+        viewOrderBtn.value = "{\"id\":"+data.id+",\"type\":\""+data.type+"\"}";
+        viewOrderBtn.innerHTML = data.date + "<label style='float: right'>"+data.type+"</label>";
+        viewOrderBtn.style.width = "100%";
+        viewOrderBtn.style.fontSize = "15"
+        viewOrderBtn.style.fontWeight = "bolder"
+        viewOrderBtn.style.textAlign = "left"
+        document.getElementById("viewOrderHolder").appendChild(viewOrderBtn)
+        viewOrderBtn.onclick = function(btn) {
+            console.log(JSON.parse(btn.target.value))
+        }
+    }
+    let viewOrderLoadWait = setInterval(function() {
+        if (loading == 2) {
+            document.getElementById("viewOrderHolder").innerHTML = ""
+            clearInterval(viewOrderLoadWait);
+            for (let cv = 0; cv < Object.keys(yourOrders).length; cv++) {
+                for (let o = 0; o < yourOrders[Object.keys(yourOrders)[cv]].length; o++) {
+                    createViewOrder(yourOrders[Object.keys(yourOrders)[cv]][o]);
+                }
+            }
+            
+        }
+    }, 100)
 }
 //Feedbacks
 document.getElementById("feedbackSubmit").onclick = function() {
