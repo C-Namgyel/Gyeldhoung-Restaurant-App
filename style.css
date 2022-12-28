@@ -1,0 +1,15 @@
+@keyframes notifyIn {
+    0% {opacity: 0%; top: -15%;}
+    100% {opacity: 100%; top: 5%;}
+}
+@keyframes notifyOut {
+    0% {opacity: 100%; top: 5%;}
+    100% {opacity: 0%; top: -15%;}
+}
+@keyframes logoZoom {
+    0% {scale: 0%; rotate: 0deg;}
+    100% {scale: 100%; rotate: 1800deg;}
+}
+.homeBtns:active {
+    background-color: white;
+}
