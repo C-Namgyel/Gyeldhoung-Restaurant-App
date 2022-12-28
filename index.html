@@ -92,6 +92,11 @@ Eg: I want it to be less spicy." style="resize: none; position: absolute; left: 
         </div>
         <button id="saveOrderQRBtn" style="position: absolute; width: 25%; top: 450px; left: 37.5%;">Save QR Code</button>
       </div>
+      <div id="viewOrderScrn" class="scrn" style="position: absoulte; width: 100%; height: 100%; left: 0%; top: 0%; width: 100%; height: 100%; scroll-behavior: smooth; overflow: auto; overflow-wrap: break-word;" hidden>
+        <div style="position: fixed; left: 0%; top: 0px; width: 100%; height: 62.5px; color: white; font-size: 30; font-weight: bolder; text-align: center; background-image: linear-gradient(blue, blue, blue, white); z-index: 99;">Your Orders</div>
+        <div id="viewOrderHolder" style="position: absolute; left: 0%; top: 75px; left: 5%; width: 90%;">
+        </div>
+      </div>
       <div id="menuScrn" class="scrn" style="position: absoulte; width: 100%; height: 100%; left: 0%; top: 0%; width: 100%; height: 100%; scroll-behavior: smooth; overflow: auto; overflow-wrap: break-word;" hidden>
         <div style="position: fixed; left: 0%; top: 0px; width: 100%; height: 62.5px; color: white; font-size: 30; font-weight: bolder; text-align: center; background-image: linear-gradient(blue, blue, blue, white); z-index: 99;">Menu</div>
         <div id="menuHolder" style="position: absolute; left: 0%; top: 75px; left: 5%; width: 90%;">
