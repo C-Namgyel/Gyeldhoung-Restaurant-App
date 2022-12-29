@@ -42,6 +42,34 @@ function findInCreateDate(arra, valName) {
     });
     return(finder)
 }
+function findInCreateDate(arra, valName) {
+    let finder = arra.findIndex(function(element) {
+        if (element.createDate == valName) {
+            return true;
+        }
+        return false;
+    });
+    return(finder)
+}
+function findInIds(arra, valName) {
+    let finder = arra.findIndex(function(element) {
+        if (element.id == valName) {
+            return true;
+        }
+        return false;
+    });
+    return(finder)
+}
+/*function findInIds(arr, valName) {
+    for (let a = 0; a < arr.length; a++) {
+        if (arr[a].id == valName) {
+            return(a)
+        }
+        if (a == (arr.length - 1)) {
+            return(-1)
+        }
+    }
+}*/
 function getUserId() {
     if ('userId' in localStorage) {
         return(localStorage.userId)
@@ -216,7 +244,7 @@ document.getElementById("homeMenuBtn").onclick = function() {
             animation("homeMenuBtn", "menuClose","1s")
             document.getElementById("homeMenuBtn").onanimationend = function(anime) {
                 if (anime.animationName == "menuClose") {
-                    document.getElementById("barrier").hidden = false;
+                    document.getElementById("barrier").hidden = true;
                     animation("homeMenuBtn", NaN, NaN);
                 }
             }
@@ -456,13 +484,13 @@ document.getElementById("orderSubmitBtn").onclick = function() {
         if (orderNum > 0) {
             let orderList = [];
             for (ol = 0; ol < orderNum; ol++) {
-                let order = {item: document.getElementById("orderInput"+ol).value, amount: document.getElementById("orderAmount"+ol).value}
+                let order = {item: document.getElementById("orderInput"+ol).value, quantity: document.getElementById("orderQuantity"+ol).value}
                 orderList.push(order)
             }
             document.getElementById("orderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("orderSubmitBtn").disabled = true;
             document.getElementById("qrcode").innerHTML = ""
-            createRecord("orders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false}, function(record) {
+            createRecord("orders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false, type: "Order"}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
                     user: localStorage.username,
@@ -501,7 +529,6 @@ function preOrderGetTotal() {
     let total = 0;
     for (t = 0; t < preOrderNum; t++) {
         total += parseInt(document.getElementById("preOrderAmount"+t).value)
-        console.log(total)
     }
     if (isNaN(total) == false) {
         document.getElementById("preOrderTotal").innerHTML = "Nu. "+total;
@@ -604,12 +631,13 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
         if (preOrderNum > 0) {
             let orderList = [];
             for (ol = 0; ol < preOrderNum; ol++) {
-                let order = {item: document.getElementById("preOrderInput"+ol).value, amount: document.getElementById("preOrderAmount"+ol).value}
+                let order = {item: document.getElementById("preOrderInput"+ol).value, quantity: document.getElementById("preOrderQuantity"+ol).value}
                 orderList.push(order)
             }
             document.getElementById("preOrderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("preOrderSubmitBtn").disabled = true;
-            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: document.getElementById("preOrderTime").value}, function(record) {
+            document.getElementById("qrcode").innerHTML = ""
+            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: document.getElementById("preOrderTime").value, tableNumber: "", arrived: false}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
                     user: localStorage.username,
@@ -676,7 +704,44 @@ document.getElementById("viewOrders").onclick = function() {
         viewOrderBtn.style.textAlign = "left"
         document.getElementById("viewOrderHolder").appendChild(viewOrderBtn)
         viewOrderBtn.onclick = function(btn) {
-            console.log(JSON.parse(btn.target.value))
+            let index = findInIds(yourOrders[JSON.parse(btn.target.value).type], JSON.parse(btn.target.value).id)
+            document.getElementById("viewOrderInfoMembers").value = yourOrders[JSON.parse(btn.target.value).type][index].members;
+            document.getElementById("viewOrderInfoRemarks").value = yourOrders[JSON.parse(btn.target.value).type][index].remarks;
+            document.getElementById("viewOrderInfoOrders").innerHTML = ""
+            for (let voio = 0; voio < JSON.parse(yourOrders[JSON.parse(btn.target.value).type][index].orders).length; voio++) {
+                document.getElementById("viewOrderInfoOrders").innerHTML = document.getElementById("viewOrderInfoOrders").innerHTML + JSON.parse(yourOrders[JSON.parse(btn.target.value).type][index].orders)[voio].item + " - " + JSON.parse(yourOrders[JSON.parse(btn.target.value).type][index].orders)[voio].quantity;
+                document.getElementById("viewOrderInfoOrders").appendChild(document.createElement("br"))
+            }
+            if (yourOrders[JSON.parse(btn.target.value).type][index].type == "Order") {
+                document.getElementById("viewOrderInfoTableNumber").value = yourOrders[JSON.parse(btn.target.value).type][index].tableNumber;
+                document.getElementById("viewOrderInfoTableNumber").disabled = true;
+                document.getElementById("viewOrderInfoTimeHolder").hidden = true;
+            } else {
+                document.getElementById("viewOrderInfoTimeHolder").hidden = false;
+                document.getElementById("viewOrderInfoTime").value = yourOrders[JSON.parse(btn.target.value).type][index].time;
+                if (yourOrders[JSON.parse(btn.target.value).type][index].tableNumber != "") {
+                    document.getElementById("viewOrderInfoTableNumber").value = yourOrders[JSON.parse(btn.target.value).type][index].tableNumber;
+                    document.getElementById("viewOrderInfoTableNumber").disabled = true;
+                    document.getElementById("viewOrderInfoArrived").hidden = true;
+                } else {
+                    document.getElementById("viewOrderInfoTableNumber").value = ""
+                    document.getElementById("viewOrderInfoTableNumber").disabled = false;
+                    document.getElementById("viewOrderInfoArrived").hidden = false;
+                    document.getElementById("viewOrderInfoArrived").onclick = function() {
+                        let conf = confirm("The workers will be notified that you have arrived and will be prepared to bring your order in the specified table. Click 'Ok' to continue.")
+                        if (conf == true) {
+                            if (document.getElementById("viewOrderInfoTableNumber").value != "") {
+                                updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, user: localStorage.username, orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), used: yourOrders[JSON.parse(btn.target.value).type][index].used, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
+                                    notify(success)
+                                });
+                            } else {
+                                notify("Please enter your table number")
+                            }
+                        }
+                    }
+                }
+            }
+            setScreen("viewOrderInfoScrn")
         }
     }
     let viewOrderLoadWait = setInterval(function() {
