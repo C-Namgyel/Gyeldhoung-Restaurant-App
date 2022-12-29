@@ -1,3 +1,10 @@
+//Font size for all which doesnt have
+var elements = document.querySelectorAll( 'body *' );
+for (es = 0; es < elements.length; es++) {
+    if (elements[es].style.fontSize == "") {
+        elements[es].style.fontSize = "15 "
+    }
+}
 //functions
 function setScreen(scrnId) {
     for (i = 0; i < document.querySelectorAll(".scrn").length; i++) {
@@ -97,6 +104,7 @@ setTimeout(function() {
     if (navigator.onLine == true) {
         readRecords("users", {}, function(records) {
             setScreen("homeScrn")
+            document.getElementById("homeMenuBtn").hidden = false;
             var allCreateDates = [];
             for (let i = 0; i < records.length; i++) {
                 allCreateDates.push(records[i].createDate);
@@ -193,13 +201,39 @@ readRecords("users", {}, function(records) {
     }
 });
 //Home Screen
+document.getElementById("homeBtn").onclick = function() {
+    setScreen("homeScrn")
+    this.hidden = true;
+    document.getElementById("homeMenuBtn").hidden = false;
+}
+var menuCloseOn = true;
+document.getElementById("homeMenuBtn").onclick = function() {
+    document.getElementById("barrier").hidden = false;
+    menuCloseOn = true;
+    animation("homeMenuBtn", "menuOpen", "1s")
+    document.onclick = function(click) {
+        if (click.target.className != "homeMenu" && menuCloseOn == true) {
+            animation("homeMenuBtn", "menuClose","1s")
+            document.getElementById("homeMenuBtn").onanimationend = function(anime) {
+                if (anime.animationName == "menuClose") {
+                    document.getElementById("barrier").hidden = false;
+                    animation("homeMenuBtn", NaN, NaN);
+                }
+            }
+        }
+    }
+}
 document.getElementById("order").onclick = function() {
     setScreen("orderScrn")
     document.getElementById("homeBtn").hidden = false;
+    document.getElementById("homeMenuBtn").hidden = true;
+    menuCloseOn = false;
 }
 document.getElementById("menu").onclick = function() {
     setScreen("menuScrn")
     document.getElementById("homeBtn").hidden = false;
+    document.getElementById("homeMenuBtn").hidden = true;
+    menuCloseOn = false;
 }
 document.getElementById("rate").onclick = function() {
     window.open("https://goo.gl/maps/ZNBzfRhG9QQRSvFKA")
@@ -207,15 +241,21 @@ document.getElementById("rate").onclick = function() {
 document.getElementById("feedback").onclick = function() {
     setScreen("feedbackScrn")
     document.getElementById("homeBtn").hidden = false;
+    document.getElementById("homeMenuBtn").hidden = true;
+    menuCloseOn = false;
 }
 document.getElementById("about").onclick = function() {
     setScreen("aboutScrn")
     document.getElementById("homeBtn").hidden = false;
     notify("Currently under Development. Will be available soon...")
+    document.getElementById("homeMenuBtn").hidden = true;
+    menuCloseOn = false;
 }
 document.getElementById("preOrder").onclick = function() {
     setScreen("preOrderScrn")
     document.getElementById("homeBtn").hidden = false;
+    document.getElementById("homeMenuBtn").hidden = true;
+    menuCloseOn = false;
 }
 //Menu
 var menu;
@@ -300,12 +340,41 @@ readRecords("menu", {}, function(records) {
     }
 });
 //Order Screen
+function findInItem(arra, valName) {
+    let finder = arra.findIndex(function(element) {
+
+        if (element.item == valName) {
+            return true;
+        }
+        return false;
+    });
+    return(finder)
+}
+function orderGetTotal() {
+    let total = 0;
+    for (t = 0; t < orderNum; t++) {
+        total += parseInt(document.getElementById("orderAmount"+t).value)
+    }
+    if (isNaN(total) == false) {
+        document.getElementById("orderTotal").innerHTML = "Nu. "+total;
+    }
+}
+function orderSetAmount(inp) {
+    let val = inp.target.name;
+    if (isNaN((menu[findInItem(menu, document.getElementById("orderInput" + val).value)].price) * parseInt(document.getElementById("orderQuantity"+val).value)) == false) {
+        document.getElementById("orderAmount"+val).innerHTML = "Nu. "+((menu[findInItem(menu, document.getElementById("orderInput" + val).value)].price) * parseInt(document.getElementById("orderQuantity"+val).value))
+        document.getElementById("orderAmount"+val).value = ((menu[findInItem(menu, document.getElementById("orderInput" + val).value)].price) * parseInt(document.getElementById("orderQuantity"+val).value))
+        orderGetTotal()
+    }
+}
 var orderNum = 0;
 document.getElementById("orderAdd").onclick = function() {
     let orderDiv = document.createElement("div");
+    orderDiv.style.width = "100%"
     let orderInp = document.createElement("select");
     orderInp.id = "orderInput"+orderNum;
-    orderInp.style.width = "70%";
+    orderInp.style.width = "50%";
+    orderInp.name = orderNum
     let orderOptTitle = document.createElement("option");
     orderOptTitle.value = "";
     orderOptTitle.disabled = true;
@@ -318,11 +387,12 @@ document.getElementById("orderAdd").onclick = function() {
         orderOpt.innerHTML = menu[o].item;
         orderInp.appendChild(orderOpt);
     }
-    let orderAmount = document.createElement("input");
-    orderAmount.id = "orderAmount"+orderNum;
-    orderAmount.style.width = "22.5%";
-    orderAmount.placeholder = "Amount"
-    orderAmount.type = "number"
+    let orderQuantity = document.createElement("input");
+    orderQuantity.id = "orderQuantity"+orderNum;
+    orderQuantity.style.width = "22.5%";
+    orderQuantity.placeholder = "Quantity"
+    orderQuantity.type = "number"
+    orderQuantity.name = orderNum
     let orderDel = document.createElement("button")
     orderDel.id = "orderDel"+orderNum;
     orderDel.style.width = "7.5%";
@@ -333,9 +403,16 @@ document.getElementById("orderAdd").onclick = function() {
     orderDel.style.backgroundPosition = "center";
     orderDel.innerHTML = "&nbsp"
     orderDel.value = orderNum;
+    let orderAmount = document.createElement("label");
+    orderAmount.id = "orderAmount"+orderNum;
+    orderAmount.style.width = "20%"
+    orderAmount.style.textAlign = "center"
+    orderAmount.innerHTML = "Amount"
+    orderAmount.style.display = "inline-block"
     orderDiv.appendChild(orderInp);
-    orderDiv.appendChild(orderAmount);
+    orderDiv.appendChild(orderQuantity);
     orderDiv.appendChild(orderDel);
+    orderDiv.appendChild(orderAmount)
     document.getElementById("orderListHolder").appendChild(orderDiv);
     orderDel.onclick = function(btn) {
         let val = (btn.target.value)
@@ -348,16 +425,24 @@ document.getElementById("orderAdd").onclick = function() {
         document.getElementById("orderInput"+(orderNum - 1)).remove()
         document.getElementById("orderAmount"+(orderNum - 1)).remove()
         document.getElementById("orderDel"+(orderNum - 1)).remove()
+        document.getElementById("orderQuantity"+(orderNum - 1)).remove()
         orderNum -= 1
+        orderGetTotal()
+    }
+    orderQuantity.onchange = function(inp) {
+        orderSetAmount(inp)
+    }
+    orderInp.onchange = function(inp) {
+        orderSetAmount(inp)
     }
     orderNum += 1
 }
 document.getElementById("orderSubmitBtn").onclick = function() {
-    let elems = ["orderTableNumber", "orderMembers", "orderRemarks"]
+    let elems = ["orderTableNumber", "orderMembers"]
     required = false;
     for (e = 0; e < orderNum; e++) {
         elems.push("orderInput"+e);
-        elems.push("orderAmount"+e);
+        elems.push("orderQuantity"+e);
     }
     for (c = 0; c < elems.length; c++) {
         if ((document.getElementById(elems[c]).value).trim() != "") {
@@ -376,6 +461,7 @@ document.getElementById("orderSubmitBtn").onclick = function() {
             }
             document.getElementById("orderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("orderSubmitBtn").disabled = true;
+            document.getElementById("qrcode").innerHTML = ""
             createRecord("orders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
@@ -411,44 +497,72 @@ document.getElementById("orderSubmitBtn").onclick = function() {
     }
 }
 //PreOrder Screen
+function preOrderGetTotal() {
+    let total = 0;
+    for (t = 0; t < preOrderNum; t++) {
+        total += parseInt(document.getElementById("preOrderAmount"+t).value)
+        console.log(total)
+    }
+    if (isNaN(total) == false) {
+        document.getElementById("preOrderTotal").innerHTML = "Nu. "+total;
+    }
+}
+function preOrderSetAmount(inp) {
+    let val = inp.target.name;
+    if (isNaN((menu[findInItem(menu, document.getElementById("preOrderInput" + val).value)].price) * parseInt(document.getElementById("preOrderQuantity"+val).value)) == false) {
+        document.getElementById("preOrderAmount"+val).innerHTML = "Nu. "+((menu[findInItem(menu, document.getElementById("preOrderInput" + val).value)].price) * parseInt(document.getElementById("preOrderQuantity"+val).value))
+        document.getElementById("preOrderAmount"+val).value = ((menu[findInItem(menu, document.getElementById("preOrderInput" + val).value)].price) * parseInt(document.getElementById("preOrderQuantity"+val).value))
+        preOrderGetTotal()
+    }
+}
 var preOrderNum = 0;
 document.getElementById("preOrderAdd").onclick = function() {
-    let orderDiv = document.createElement("div");
-    let orderInp = document.createElement("select");
-    orderInp.id = "preOrderInput"+preOrderNum;
-    orderInp.style.width = "70%";
-    let orderOptTitle = document.createElement("option");
-    orderOptTitle.value = "";
-    orderOptTitle.disabled = true;
-    orderOptTitle.selected = true;
-    orderOptTitle.hidden = true;
-    orderOptTitle.innerHTML = "Order "+(preOrderNum+1)
-    orderInp.appendChild(orderOptTitle);
+    let preOrderDiv = document.createElement("div");
+    preOrderDiv.style.width = "100%"
+    let preOrderInp = document.createElement("select");
+    preOrderInp.id = "preOrderInput"+preOrderNum;
+    preOrderInp.style.width = "50%";
+    preOrderInp.name = preOrderNum
+    let preOrderOptTitle = document.createElement("option");
+    preOrderOptTitle.value = "";
+    preOrderOptTitle.disabled = true;
+    preOrderOptTitle.selected = true;
+    preOrderOptTitle.hidden = true;
+    preOrderOptTitle.innerHTML = "Order "+(preOrderNum+1)
+    preOrderInp.appendChild(preOrderOptTitle);
     for (o = 0; o < menu.length; o++) {
-        let orderOpt = document.createElement("option");
-        orderOpt.innerHTML = menu[o].item;
-        orderInp.appendChild(orderOpt);
+        let preOrderOpt = document.createElement("option");
+        preOrderOpt.innerHTML = menu[o].item;
+        preOrderInp.appendChild(preOrderOpt);
     }
-    let orderAmount = document.createElement("input");
-    orderAmount.id = "preOrderAmount"+preOrderNum;
-    orderAmount.style.width = "22.5%";
-    orderAmount.placeholder = "Amount"
-    orderAmount.type = "number"
-    let orderDel = document.createElement("button")
-    orderDel.id = "preOrderDel"+preOrderNum;
-    orderDel.style.width = "7.5%";
-    orderDel.style.backgroundColor = "red"
-    orderDel.style.backgroundImage = "url(assets/delLogo.png)";
-    orderDel.style.backgroundSize = "contain";
-    orderDel.style.backgroundRepeat = "no-repeat";
-    orderDel.style.backgroundPosition = "center";
-    orderDel.innerHTML = "&nbsp"
-    orderDel.value = preOrderNum;
-    orderDiv.appendChild(orderInp);
-    orderDiv.appendChild(orderAmount);
-    orderDiv.appendChild(orderDel);
-    document.getElementById("preOrderListHolder").appendChild(orderDiv);
-    orderDel.onclick = function(btn) {
+    let preOrderQuantity = document.createElement("input");
+    preOrderQuantity.id = "preOrderQuantity"+preOrderNum;
+    preOrderQuantity.style.width = "22.5%";
+    preOrderQuantity.placeholder = "Quantity"
+    preOrderQuantity.type = "number"
+    preOrderQuantity.name = preOrderNum
+    let preOrderDel = document.createElement("button")
+    preOrderDel.id = "preOrderDel"+preOrderNum;
+    preOrderDel.style.width = "7.5%";
+    preOrderDel.style.backgroundColor = "red"
+    preOrderDel.style.backgroundImage = "url(assets/delLogo.png)";
+    preOrderDel.style.backgroundSize = "contain";
+    preOrderDel.style.backgroundRepeat = "no-repeat";
+    preOrderDel.style.backgroundPosition = "center";
+    preOrderDel.innerHTML = "&nbsp"
+    preOrderDel.value = preOrderNum;
+    let preOrderAmount = document.createElement("label");
+    preOrderAmount.id = "preOrderAmount"+preOrderNum;
+    preOrderAmount.style.width = "20%"
+    preOrderAmount.style.textAlign = "center"
+    preOrderAmount.innerHTML = "Amount"
+    preOrderAmount.style.display = "inline-block"
+    preOrderDiv.appendChild(preOrderInp);
+    preOrderDiv.appendChild(preOrderQuantity);
+    preOrderDiv.appendChild(preOrderDel);
+    preOrderDiv.appendChild(preOrderAmount)
+    document.getElementById("preOrderListHolder").appendChild(preOrderDiv);
+    preOrderDel.onclick = function(btn) {
         let val = (btn.target.value)
         for (d = val; d < preOrderNum; d++) {
             if (d != (preOrderNum - 1)) {
@@ -459,16 +573,24 @@ document.getElementById("preOrderAdd").onclick = function() {
         document.getElementById("preOrderInput"+(preOrderNum - 1)).remove()
         document.getElementById("preOrderAmount"+(preOrderNum - 1)).remove()
         document.getElementById("preOrderDel"+(preOrderNum - 1)).remove()
+        document.getElementById("preOrderQuantity"+(preOrderNum - 1)).remove()
         preOrderNum -= 1
+        preOrderGetTotal()
+    }
+    preOrderQuantity.onchange = function(inp) {
+        preOrderSetAmount(inp)
+    }
+    preOrderInp.onchange = function(inp) {
+        preOrderSetAmount(inp)
     }
     preOrderNum += 1
 }
 document.getElementById("preOrderSubmitBtn").onclick = function() {
-    let elems = ["preOrderStartTime", "preOrderEndTime", "preOrderMembers", "preOrderRemarks"]
+    let elems = ["preOrderTime", "preOrderMembers"]
     let required = false;
     for (e = 0; e < preOrderNum; e++) {
         elems.push("preOrderInput"+e);
-        elems.push("preOrderAmount"+e);
+        elems.push("preOrderQuantity"+e);
     }
     for (c = 0; c < elems.length; c++) {
         if ((document.getElementById(elems[c]).value).trim() != "") {
@@ -487,7 +609,7 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
             }
             document.getElementById("preOrderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("preOrderSubmitBtn").disabled = true;
-            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false}, function(record) {
+            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: document.getElementById("preOrderTime").value}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
                     user: localStorage.username,
@@ -523,6 +645,8 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
 //View order scrn
 document.getElementById("viewOrders").onclick = function() {
     setScreen("viewOrderScrn");
+    document.getElementById("homeMenuBtn").hidden = true;
+    menuCloseOn = false;
     document.getElementById("homeBtn").hidden = false;
     document.getElementById("viewOrderHolder").innerHTML = "Loading... Please wait..."
     let loading = 0;
@@ -538,14 +662,12 @@ document.getElementById("viewOrders").onclick = function() {
     });
     readRecords("preOrders", {user: localStorage.username, date: getFullDates()}, function(records) {
         loading = parseInt(loading) + 1;
-        let typePreOrder = []
         for (let yo = 0; yo < records.length; yo++) {
             yourOrders["Pre Order"].push(records[yo]);
         }
     });
     function createViewOrder(data) {
         let viewOrderBtn = document.createElement("button");
-        console.log("{\"id\":"+data.id+",\"type\":\""+data.type+"\"}")
         viewOrderBtn.value = "{\"id\":"+data.id+",\"type\":\""+data.type+"\"}";
         viewOrderBtn.innerHTML = data.date + "<label style='float: right'>"+data.type+"</label>";
         viewOrderBtn.style.width = "100%";
@@ -579,6 +701,7 @@ document.getElementById("feedbackSubmit").onclick = function() {
             document.getElementById("feedbackSubmit").innerHTML = "Submit"
             document.getElementById("feedbackSubmit").disabled = false;
             notify("Feedback/Complaint successfully submitted")
+            document.getElementById("feedbackInput").value = "";
         });
     }
 }
