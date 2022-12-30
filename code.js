@@ -198,8 +198,60 @@ function message(placeHolder, enableSeconds) {
             }
             clearInterval(CD);
         }
-    }, 1000)
-    
+    }, 1000)   
+}
+function getCurrentTime() {
+    let date = new Date()
+    let hour = date.getHours()
+    let minute = date.getMinutes()
+    let ampm = "am"
+    if (hour > 12) {
+        hour = hour - 12;
+        ampm = "pm";
+    }
+    if (hour < 10) {
+        hour = "0" + hour;
+    }
+    if (minute < 10) {
+        minute = "0" + minute;
+    }
+    return(hour+":"+minute+" "+ampm)
+}
+function extractTime(time) {
+    let obj = {"hour": "", "minute": "", "ampm": ""}
+    let extract = time.split(":")
+    obj.hour = parseInt(extract[0])
+    obj.minute = parseInt(extract[1].split(" ")[0])
+    obj.ampm = extract[1].split(" ")[1]
+    return(obj)
+}
+function time2seconds(time) {
+    let extract = extractTime(time)
+    let hour = extract.hour;
+    let minute = extract.minute;
+    if (extract.ampm == "pm") {
+        hour += 12
+    }
+    minute += hour * 60;
+    let second = minute * 60;
+    return(second)
+}
+function sortInAscending(arr) {
+    arr.sort(function(a, b){return b-a});
+}
+function timeInputValue(id) {
+    let raw = document.getElementById(id).value.split(":");
+    let hour = raw[0]
+    let minute = raw[1]
+    let ampm = "am"
+    if (parseInt(hour) > 12) {
+        hour = hour - 12;
+        ampm = "pm"
+    }
+    if (hour < 10) {
+        hour = "0" + hour;
+    }
+    return(hour + ":" + minute + " " + ampm)
 }
 //Splash
 setTimeout(function() {
@@ -442,8 +494,7 @@ readRecords("menu", {}, function(records) {
 });
 //Order Screen
 function findInItem(arra, valName) {
-    let finder = arra.findIndex(function(element) {
-
+    let finder = arra.findIndex(function(element) { 
         if (element.item == valName) {
             return true;
         }
@@ -563,10 +614,10 @@ document.getElementById("orderSubmitBtn").onclick = function() {
             document.getElementById("orderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("orderSubmitBtn").disabled = true;
             document.getElementById("qrcode").innerHTML = ""
-            createRecord("orders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false, type: "Order"}, function(record) {
+            createRecord("orders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false, type: "Order", time: getCurrentTime()}, function(record) {
                 setScreen("orderQRScrn")
                 let ordersForQR = {
-                    user: localStorage.username,
+                    userId: getUserId(),
                     id: record.id,
                     tableNumber: document.getElementById("orderTableNumber").value,
                     members: document.getElementById("orderMembers").value,
@@ -700,10 +751,13 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
             }
             document.getElementById("preOrderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("preOrderSubmitBtn").disabled = true;
-            document.getElementById("qrcode").innerHTML = ""
-            createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: document.getElementById("preOrderTime").value, tableNumber: "", arrived: false}, function(record) {
-                message("Your order is successfully submitted. But you must notify the workers that you have arrived. You can do that later after you have arrived at the restaurant.<br>After arriving the restaurant,<br>1. open the app<br>2. Click 'View your orders'<br>3. Click on the order which has the label 'Pre Order' at the right of the button<br>4. Enter your table number and then click 'Arrived'", 10)
-                setScreen("homeScrn")
+            createRecord("preOrders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: timeInputValue("preOrderTime"), tableNumber: "", arrived: false}, function(record) {
+                message("Your order is successfully submitted. But you must notify the workers that you have arrived. You can do that later after you have arrived at the restaurant.<br>After arriving the restaurant,<br>1. Open the app<br>2. Click 'View your orders'<br>3. Click on the order which has the label 'Pre Order' at the right of the button<br>4. Enter your table number and then click 'Arrived'", 10)
+                document.getElementById("homeBtn").click();
+                document.getElementById("barrier2").hidden = false;
+                setTimeout(function() {
+                    document.getElementById("barrier2").hidden = true;
+                }, 10000)
                 notify("Order successfullt submitted")
                 document.getElementById("preOrderSubmitBtn").innerHTML = "Submit"
                 document.getElementById("preOrderSubmitBtn").disabled = false;
@@ -727,13 +781,13 @@ document.getElementById("viewOrders").onclick = function() {
         "Order": [],
         "Pre Order": []
     }
-    readRecords("orders", {user: localStorage.username, date: getFullDates()}, function(records) {
-        loading  = parseInt(loading) + 1;
+    readRecords("orders", {userId: getUserId(), date: getFullDates()}, function(records) {
+        loading = parseInt(loading) + 1;
         for (let yo = 0; yo < records.length; yo++) {
             yourOrders["Order"].push(records[yo]);
         }
     });
-    readRecords("preOrders", {user: localStorage.username, date: getFullDates()}, function(records) {
+    readRecords("preOrders", {userId: getUserId(), date: getFullDates()}, function(records) {
         loading = parseInt(loading) + 1;
         for (let yo = 0; yo < records.length; yo++) {
             yourOrders["Pre Order"].push(records[yo]);
@@ -742,7 +796,14 @@ document.getElementById("viewOrders").onclick = function() {
     function createViewOrder(data) {
         let viewOrderBtn = document.createElement("button");
         viewOrderBtn.value = "{\"id\":"+data.id+",\"type\":\""+data.type+"\"}";
-        viewOrderBtn.innerHTML = data.date + "<label style='float: right'>"+data.type+"</label>";
+        viewOrderBtn.innerHTML = data.date + ", " + data.time
+        let viewOrderBtnLabel = document.createElement("label")
+        viewOrderBtnLabel.style.float = "right";
+        viewOrderBtnLabel.innerHTML = "- " + data.type
+        viewOrderBtnLabel.onclick = function(labe) { 
+            labe.target.parentElement.click();
+        }
+        viewOrderBtn.appendChild(viewOrderBtnLabel)
         viewOrderBtn.style.width = "100%";
         viewOrderBtn.style.fontSize = "15"
         viewOrderBtn.style.fontWeight = "bolder"
@@ -778,12 +839,13 @@ document.getElementById("viewOrders").onclick = function() {
                             if (document.getElementById("viewOrderInfoTableNumber").value != "") {
                                 document.getElementById("viewOrderInfoArrived").innerHTML = "Wait...";
                                 document.getElementById("viewOrderInfoArrived").disabled = true;
+                                document.getElementById("qrcode").innerHTML = ""
                                 updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, user: localStorage.username, orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), used: yourOrders[JSON.parse(btn.target.value).type][index].used, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
                                     if (success == true) {
                                         setScreen("orderQRScrn");
                                         document.getElementById("viewOrderInfoArrived").hidden = true;
                                         let ordersForQR = {
-                                            user: localStorage.username,
+                                            userId: getUserId(),
                                             id: record.id,
                                             members: record.members,
                                             orders: record.orders,
@@ -807,8 +869,9 @@ document.getElementById("viewOrders").onclick = function() {
             }
             document.getElementById("viewOrderInfoQR").onclick = function() {
                 setScreen("orderQRScrn")
+                document.getElementById("qrcode").innerHTML = ""
                 let ordersForQR = {
-                    user: localStorage.username,
+                    userId: getUserId(),
                     id: yourOrders[JSON.parse(btn.target.value).type][index].id,
                     tableNumber: yourOrders[JSON.parse(btn.target.value).type][index].tableNumber,
                     members: yourOrders[JSON.parse(btn.target.value).type][index].members,
@@ -827,12 +890,21 @@ document.getElementById("viewOrders").onclick = function() {
         if (loading == 2) {
             document.getElementById("viewOrderHolder").innerHTML = ""
             clearInterval(viewOrderLoadWait);
-            for (let cv = 0; cv < Object.keys(yourOrders).length; cv++) {
-                for (let o = 0; o < yourOrders[Object.keys(yourOrders)[cv]].length; o++) {
-                    createViewOrder(yourOrders[Object.keys(yourOrders)[cv]][o]);
+            if (yourOrders.Order.length == 0 && yourOrders["Pre Order"].length == 0) {
+                document.getElementById("viewOrderHolder").innerHTML = "You haven't ordered anything today. Would you like to go and order?<br>"
+                let orderBtn = document.createElement("button")
+                orderBtn.innerHTML = "Order"
+                orderBtn.onclick = function() {
+                    setScreen("orderScrn")
                 }
-            }
-            
+                document.getElementById("viewOrderHolder").appendChild(orderBtn)
+            } else {
+                for (let cv = 0; cv < Object.keys(yourOrders).length; cv++) {
+                    for (let o = 0; o < yourOrders[Object.keys(yourOrders)[cv]].length; o++) {
+                        createViewOrder(yourOrders[Object.keys(yourOrders)[cv]][o]);
+                    }
+                }
+            }            
         }
     }, 100)
 }
@@ -841,7 +913,7 @@ document.getElementById("feedbackSubmit").onclick = function() {
     if ((document.getElementById("feedbackInput").value).trim() != "") {
         document.getElementById("feedbackSubmit").innerHTML = "Submitting"
         document.getElementById("feedbackSubmit").disabled = true;
-        createRecord("feedbacks", {user: localStorage.username, message: document.getElementById("feedbackInput").value}, function(record) {
+        createRecord("feedbacks", {userId: getUserId(), message: document.getElementById("feedbackInput").value}, function(record) {
             document.getElementById("feedbackSubmit").innerHTML = "Submit"
             document.getElementById("feedbackSubmit").disabled = false;
             notify("Feedback/Complaint successfully submitted")
