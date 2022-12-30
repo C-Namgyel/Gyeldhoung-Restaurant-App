@@ -120,7 +120,7 @@ function askUsername(msg, createorupdate) {
         if ((username.length >= 3) && (username.length <= 25)) {
             if (containsLetter(username) == true) {
                 readRecords("users", {}, function(records) {
-                    if ((findInUsername(records, username)) == -1) {
+                    if (findInUsername(records, username) == -1) {
                         document.getElementById("navUsername").innerHTML = username;
                         if (createorupdate == "Create") {
                             createRecord("users", {username:username, userId: localStorage.userId, createDate: getFullDates()}, function(record) {
@@ -137,7 +137,11 @@ function askUsername(msg, createorupdate) {
                             });
                         }
                     } else {
-                        askUsername("Enter a username to continue using the app\n*Username already taken", "Create")
+                        if (records[findInUsername(records, username)].userId != getUserId()) {
+                            askUsername("Enter a username to continue using the app\n*Username already taken", "Create")
+                        } else {
+                            notify("Cannot change username. New username is same as old one")
+                        }
                     }
                 });
             } else {
