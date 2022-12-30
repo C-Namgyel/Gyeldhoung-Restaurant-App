@@ -2,7 +2,23 @@
 var elements = document.querySelectorAll( 'body *' );
 for (es = 0; es < elements.length; es++) {
     if (elements[es].style.fontSize == "") {
-        elements[es].style.fontSize = "15 "
+        elements[es].style.fontSize = "14"
+    }
+}
+window.addEventListener('online', function() {
+    notify("Internet connection restored")
+    document.getElementById("noInternet2").hidden = true;
+});
+window.addEventListener('offline', function() {
+    notify("Internet Connection lost")
+    document.getElementById("noInternet2").hidden = false;
+});
+function recheckInternet() {
+    if (navigator.onLine == true) {
+        document.getElementById("noInternet").hidden = true;
+    } else {
+        notify("Check your internet connection and try again")
+        document.getElementById("noInternet").hidden = false;
     }
 }
 //functions
@@ -60,16 +76,6 @@ function findInIds(arra, valName) {
     });
     return(finder)
 }
-/*function findInIds(arr, valName) {
-    for (let a = 0; a < arr.length; a++) {
-        if (arr[a].id == valName) {
-            return(a)
-        }
-        if (a == (arr.length - 1)) {
-            return(-1)
-        }
-    }
-}*/
 function getUserId() {
     if ('userId' in localStorage) {
         return(localStorage.userId)
@@ -97,34 +103,99 @@ function notify(msg) {
         animation("notify", "notifyOut", "1.5s")
     }, 2000)
 }
-function askUsername(msg) {
+function download(record) {
+    html2canvas(document.getElementById("holder")).then(function(canvas) {
+        const image = canvas.toDataURL("image/png", 1.0);
+        const link = document.createElement("a");
+        link.download = "order"+record.id+".png";
+        link.href = image;
+        link.click();
+    });
+}
+function askUsername(msg, createorupdate) {
     let username = prompt(msg)
     if (username == null) {
-        askUsername("Enter a username to continue using the app\n*Please enter something")
+        askUsername("Enter a username to continue using the app\n*Please enter something", "Create")
     } else if ((username).trim() != "") {
         if ((username.length >= 3) && (username.length <= 25)) {
             if (containsLetter(username) == true) {
                 readRecords("users", {}, function(records) {
                     if ((findInUsername(records, username)) == -1) {
-                        createRecord("users", {username:username, userId: localStorage.userId, createDate: getFullDates()}, function(record) {
-                            localStorage.username = username;
-                        });
+                        document.getElementById("navUsername").innerHTML = username;
+                        if (createorupdate == "Create") {
+                            createRecord("users", {username:username, userId: localStorage.userId, createDate: getFullDates()}, function(record) {
+                                localStorage.username = username;
+                            });
+                        } else {
+                            updateRecord("users", {id: records[findInUserId(records, getUserId())].id, username:username, userId: localStorage.userId, createDate: getFullDates()}, function(record, success) {
+                                if (success == true) {
+                                    notify("Successfully changed")
+                                    localStorage.username = username;
+                                } else {
+                                    notify("Falied. Please try again")
+                                }
+                            });
+                        }
                     } else {
-                        askUsername("Enter a username to continue using the app\n*Username already taken")
+                        askUsername("Enter a username to continue using the app\n*Username already taken", "Create")
                     }
                 });
             } else {
-                askUsername("Enter a username to continue using the app\n*Username must contain atleast one letter")
+                askUsername("Enter a username to continue using the app\n*Username must contain atleast one letter", "Create")
             }
         } else {
-            askUsername("Enter a username to continue using the app\n*Username can only have 3 - 25 characters")
+            askUsername("Enter a username to continue using the app\n*Username can only have 3 - 25 characters", "Create")
         }
     } else {
-        askUsername("Enter a username to continue using the app\n*Please enter something")
+        askUsername("Enter a username to continue using the app\n*Please enter something", "Create")
     }
 }
 function getFullDates() {
     return((new Date().getDate()) + ":" + (parseInt(new Date().getMonth()) + 1) + ":" + (new Date().getFullYear()))
+}
+function message(placeHolder, enableSeconds) {
+    let div = document.createElement("div")
+    div.style.width = "65%"
+    div.style.position = "fixed"
+    div.style.top = "0%"
+    div.style.left = "12.5%"
+    div.style.borderStyle = "solid"
+    div.style.borderWidth ="1px"
+    div.style.borderRadius = "15px"
+    div.style.backgroundColor = "white"
+    div.style.zIndex = "99999"
+    div.style.padding ="5%"
+    let label = document.createElement("label")
+    label.innerHTML = placeHolder,
+    label.style.display = "inline-block"
+    label.style.width = "100%";
+    let ok = document.createElement("button");
+    ok.style.width = "25%"
+    ok.innerHTML = "OK (" + enableSeconds + "s)"
+    ok.style.float = "right"
+    ok.style.borderStyle = "none"
+    ok.style.backgroundColor = "white"
+    ok.disabled = true;
+    div.appendChild(label)
+    div.appendChild(document.createElement("br"))
+    div.appendChild(document.createElement("br"))
+    div.appendChild(ok)
+    document.body.appendChild(div)
+    div.style.top = (((window.getComputedStyle(document.body).height).slice(0,this.length - 2) / 2) - (div.clientHeight / 2)) + "px"
+    let CDNum = enableSeconds;
+    let CD = setInterval(function() {
+        CDNum -= 1;
+        ok.innerHTML = "OK (" + CDNum + "s)"
+        if (CDNum <= 0) {
+            ok.disabled = false;
+            ok.innerHTML = "OK";
+            ok.onclick = function() {
+                div.remove()
+            }
+            clearInterval(CD);
+        }
+    }, 1000)
+    
 }
 //Splash
 setTimeout(function() {
@@ -132,6 +203,25 @@ setTimeout(function() {
     if (navigator.onLine == true) {
         readRecords("users", {}, function(records) {
             setScreen("homeScrn")
+            if (("username" in localStorage) != true) {
+                askUsername(`Enter a username to continue using the app
+*Username can only have 3 - 25 characters
+*Username must contain atleast one letter`, "Create")
+            } else {
+                readRecords("users", {}, function(records) {
+                    if (((findInUsername(records, localStorage.username)) != -1)) {
+                        if ((records[findInUsername(records, localStorage.username)].createDate) == getFullDates()) {
+                            if (((records[findInUsername(records, localStorage.username)].userId) != getUserId())) {
+                                askUsername("Enter a username to continue using the app\n*Seems like your username is taken by someone else today. Please choose a new username or add some number after your username", "Create")        
+                            }
+                        }
+                    } else {
+                        createRecord("users", {username:localStorage.username, userId: localStorage.userId, createDate: getFullDates()}, function(record) {
+                            document.getElementById("navUsername").innerHTML = localStorage.username;
+                        })
+                    }
+                })
+            }
             document.getElementById("homeMenuBtn").hidden = false;
             var allCreateDates = [];
             for (let i = 0; i < records.length; i++) {
@@ -166,25 +256,6 @@ setTimeout(function() {
                 });
             }
         }) 
-        if (("username" in localStorage) != true) {
-            askUsername(`Enter a username to continue using the app
-*Username can only have 3 - 25 characters
-*Username must contain atleast one letter`)
-        } else {
-            readRecords("users", {}, function(records) {
-                if (((findInUsername(records, localStorage.username)) != -1)) {
-                    if ((records[findInUsername(records, localStorage.username)].createDate) == getFullDates()) {
-                        if (((records[findInUsername(records, localStorage.username)].userId) != getUserId())) {
-                            askUsername("Enter a username to continue using the app\n*Seems like your username is taken by someone else today. Please choose a new username or add some number after your username")        
-                        }
-                    }
-                } else {
-                    createRecord("users", {username:localStorage.username, userId: localStorage.userId, createDate: getFullDates()}, function(record) {
-
-                    })
-                }
-            })
-        }
     } else {
         document.getElementById("noInternet").hidden = false;
     }
@@ -234,22 +305,13 @@ document.getElementById("homeBtn").onclick = function() {
     this.hidden = true;
     document.getElementById("homeMenuBtn").hidden = false;
 }
-var menuCloseOn = true;
 document.getElementById("homeMenuBtn").onclick = function() {
+    animation("navDiv", "navOpen", "0.5s")
     document.getElementById("barrier").hidden = false;
-    menuCloseOn = true;
-    animation("homeMenuBtn", "menuOpen", "1s")
-    document.onclick = function(click) {
-        if (click.target.className != "homeMenu" && menuCloseOn == true) {
-            animation("homeMenuBtn", "menuClose","1s")
-            document.getElementById("homeMenuBtn").onanimationend = function(anime) {
-                if (anime.animationName == "menuClose") {
-                    document.getElementById("barrier").hidden = true;
-                    animation("homeMenuBtn", NaN, NaN);
-                }
-            }
-        }
-    }
+}
+document.getElementById("barrier").onclick = function() {
+    animation("navDiv", "navClose", "0.5s")
+    document.getElementById("barrier").hidden = true;
 }
 document.getElementById("order").onclick = function() {
     setScreen("orderScrn")
@@ -284,6 +346,13 @@ document.getElementById("preOrder").onclick = function() {
     document.getElementById("homeBtn").hidden = false;
     document.getElementById("homeMenuBtn").hidden = true;
     menuCloseOn = false;
+}
+//Nav
+document.getElementById("navUsername").innerHTML = localStorage.username;
+document.getElementById("navChangeUsername").onclick = function() {
+    askUsername(`Enter the new username.
+*Username can only have 3 - 25 characters
+*Username must contain atleast one letter`, "Update")
 }
 //Menu
 var menu;
@@ -501,17 +570,8 @@ document.getElementById("orderSubmitBtn").onclick = function() {
                     remarks: document.getElementById("orderRemarks").value
                 }
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
-                function download() {
-                    html2canvas(document.getElementById("holder")).then(function(canvas) {
-                        const image = canvas.toDataURL("image/png", 1.0);
-                        const link = document.createElement("a");
-                        link.download = "order"+record.id+".png";
-                        link.href = image;
-                        link.click();
-                    });
-                }
                 document.getElementById("saveOrderQRBtn").onclick = function() {
-                    download()
+                    download(record)
                 }
                 notify("Order successfullt submitted")
                 document.getElementById("orderSubmitBtn").innerHTML = "Submit"
@@ -638,27 +698,8 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
             document.getElementById("preOrderSubmitBtn").disabled = true;
             document.getElementById("qrcode").innerHTML = ""
             createRecord("preOrders", {user: localStorage.username, orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: document.getElementById("preOrderTime").value, tableNumber: "", arrived: false}, function(record) {
-                setScreen("orderQRScrn")
-                let ordersForQR = {
-                    user: localStorage.username,
-                    id: record.id,
-                    members: document.getElementById("preOrderMembers").value,
-                    orders: orderList,
-                    remarks: document.getElementById("preOrderRemarks").value
-                }
-                new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
-                function download() {
-                    html2canvas(document.getElementById("holder")).then(function(canvas) {
-                        const image = canvas.toDataURL("image/png", 1.0);
-                        const link = document.createElement("a");
-                        link.download = "order"+record.id+".png";
-                        link.href = image;
-                        link.click();
-                    });
-                }
-                document.getElementById("saveOrderQRBtn").onclick = function() {
-                    download()
-                }
+                message("Your order is successfully submitted. But you must notify the workers that you have arrived. You can do that later after you have arrived at the restaurant.<br>After arriving the restaurant,<br>1. open the app<br>2. Click 'View your orders'<br>3. Click on the order which has the label 'Pre Order' at the right of the button<br>4. Enter your table number and then click 'Arrived'", 10)
+                setScreen("homeScrn")
                 notify("Order successfullt submitted")
                 document.getElementById("preOrderSubmitBtn").innerHTML = "Submit"
                 document.getElementById("preOrderSubmitBtn").disabled = false;
@@ -731,14 +772,48 @@ document.getElementById("viewOrders").onclick = function() {
                         let conf = confirm("The workers will be notified that you have arrived and will be prepared to bring your order in the specified table. Click 'Ok' to continue.")
                         if (conf == true) {
                             if (document.getElementById("viewOrderInfoTableNumber").value != "") {
+                                document.getElementById("viewOrderInfoArrived").innerHTML = "Wait...";
+                                document.getElementById("viewOrderInfoArrived").disabled = true;
                                 updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, user: localStorage.username, orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), used: yourOrders[JSON.parse(btn.target.value).type][index].used, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
-                                    notify(success)
+                                    if (success == true) {
+                                        setScreen("orderQRScrn");
+                                        document.getElementById("viewOrderInfoArrived").hidden = true;
+                                        let ordersForQR = {
+                                            user: localStorage.username,
+                                            id: record.id,
+                                            members: record.members,
+                                            orders: record.orders,
+                                            remarks: record.remarks
+                                        }
+                                        new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
+                                        document.getElementById("saveOrderQRBtn").onclick = function() {
+                                            download(record)
+                                        }
+                                        notify("Workers have been notified")
+                                    } else {
+                                        notify("Failed. Please try again")
+                                    }
                                 });
                             } else {
                                 notify("Please enter your table number")
                             }
                         }
                     }
+                }
+            }
+            document.getElementById("viewOrderInfoQR").onclick = function() {
+                setScreen("orderQRScrn")
+                let ordersForQR = {
+                    user: localStorage.username,
+                    id: yourOrders[JSON.parse(btn.target.value).type][index].id,
+                    tableNumber: yourOrders[JSON.parse(btn.target.value).type][index].tableNumber,
+                    members: yourOrders[JSON.parse(btn.target.value).type][index].members,
+                    orders: yourOrders[JSON.parse(btn.target.value).type][index].orders,
+                    remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks
+                }
+                new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
+                document.getElementById("saveOrderQRBtn").onclick = function() {
+                    download(yourOrders[JSON.parse(btn.target.value).type][index])
                 }
             }
             setScreen("viewOrderInfoScrn")
