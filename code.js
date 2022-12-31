@@ -186,19 +186,25 @@ function message(placeHolder, enableSeconds) {
     div.appendChild(ok)
     document.body.appendChild(div)
     div.style.top = (((window.getComputedStyle(document.body).height).slice(0,this.length - 2) / 2) - (div.clientHeight / 2)) + "px"
-    let CDNum = enableSeconds;
-    let CD = setInterval(function() {
-        CDNum -= 1;
-        ok.innerHTML = "OK (" + CDNum + "s)"
-        if (CDNum <= 0) {
-            ok.disabled = false;
-            ok.innerHTML = "OK";
-            ok.onclick = function() {
-                div.remove()
+    document.getElementById("barrier2").hidden = false;
+    if (enableSeconds < 0) {
+        ok.hidden = true;
+    } else {
+        let CDNum = enableSeconds;
+        let CD = setInterval(function() {
+            CDNum -= 1;
+            ok.innerHTML = "OK (" + CDNum + "s)"
+            if (CDNum <= 0) {
+                ok.disabled = false;
+                ok.innerHTML = "OK";
+                ok.onclick = function() {
+                    div.remove()
+                    document.getElementById("barrier2").hidden = false;
+                }
+                clearInterval(CD);
             }
-            clearInterval(CD);
-        }
-    }, 1000)   
+        }, 1000)
+    }
 }
 function getCurrentTime() {
     let date = new Date()
@@ -259,11 +265,7 @@ setTimeout(function() {
     if (navigator.onLine == true) {
         readRecords("appVersion", {}, function(records) {
             if (records[0].version != "1.0") {
-                message("You are not using the latest version of the app.<br>Get the latest version from <a href="+records[0].link+" onclick=\"window.close()\">here</a><br>You will automatically be redirected to the download site after 5 seconds", 5)
-                setTimeout( function() {
-                    window.open(records[0].link);
-                    location.reload();
-                }, 5000)
+                message("You are not using the latest version of the app.<br>Get the latest version from <a href="+records[0].link+" target=\"_blank\">here</a>", -1)
             }
         })
         readRecords("users", {}, function(records) {
@@ -777,10 +779,6 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
                 preOrderNum = 0;
                 message("Your order is successfully submitted. But you must notify the workers that you have arrived. You can do that later after you have arrived at the restaurant.<br>After arriving the restaurant,<br>1. Open the app<br>2. Click 'View your orders'<br>3. Click on the order which has the label 'Pre Order' at the right of the button<br>4. Enter your table number and then click 'Arrived'", 10)
                 document.getElementById("homeBtn").click();
-                document.getElementById("barrier2").hidden = false;
-                setTimeout(function() {
-                    document.getElementById("barrier2").hidden = true;
-                }, 10000)
                 notify("Order successfullt submitted")
                 document.getElementById("preOrderSubmitBtn").innerHTML = "Submit"
                 document.getElementById("preOrderSubmitBtn").disabled = false;
