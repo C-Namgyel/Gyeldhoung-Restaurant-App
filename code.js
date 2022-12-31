@@ -257,6 +257,15 @@ function timeInputValue(id) {
 setTimeout(function() {
     document.getElementById("noInternet").hidden = true;
     if (navigator.onLine == true) {
+        readRecords("appVersion", {}, function(records) {
+            if (records[0].version != "1.0") {
+                message("You are not using the latest version of the app.<br>Get the latest version from <a href="+records[0].link+" onclick=\"window.close()\">here</a><br>You will automatically be redirected to the download site after 5 seconds", 5)
+                setTimeout( function() {
+                    window.open(records[0].link);
+                    location.reload();
+                }, 5000)
+            }
+        })
         readRecords("users", {}, function(records) {
             setScreen("homeScrn")
             if (("username" in localStorage) != true) {
