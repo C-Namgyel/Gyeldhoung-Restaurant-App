@@ -872,7 +872,6 @@ document.getElementById("viewOrders").onclick = function() {
                                             orders: record.orders,
                                             remarks: record.remarks
                                         }
-                                        console.log(ordersForQR)
                                         new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                                         document.getElementById("saveOrderQRBtn").onclick = function() {
                                             download(record)
@@ -900,7 +899,6 @@ document.getElementById("viewOrders").onclick = function() {
                     orders: yourOrders[JSON.parse(btn.target.value).type][index].orders,
                     remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks
                 }
-                console.log(ordersForQR)
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                 document.getElementById("saveOrderQRBtn").onclick = function() {
                     download(yourOrders[JSON.parse(btn.target.value).type][index])
