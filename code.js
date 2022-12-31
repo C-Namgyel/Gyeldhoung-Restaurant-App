@@ -613,8 +613,15 @@ document.getElementById("orderSubmitBtn").onclick = function() {
             }
             document.getElementById("orderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("orderSubmitBtn").disabled = true;
-            document.getElementById("qrcode").innerHTML = ""
+            document.getElementById("qrcode").innerHTML = "<img src=\"assets/Restaurant logo.png\" style=\"width: 25%; height: 25%; left: 37.5%; top: 37.5%; position: absolute; border-radius: 15px;\">"
             createRecord("orders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false, type: "Order", time: getCurrentTime()}, function(record) {
+                document.getElementById("orderTableNumberNull").selected = true;
+                document.getElementById("orderMembers").value = "";
+                document.getElementById("orderRemarks").value = "";
+                for (oc = (orderNum) - 1; oc >= 0; oc--) {
+                    document.getElementById("orderDel"+oc).click();
+                }
+                orderNum = 0;
                 setScreen("orderQRScrn")
                 let ordersForQR = {
                     userId: getUserId(),
@@ -752,6 +759,13 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
             document.getElementById("preOrderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("preOrderSubmitBtn").disabled = true;
             createRecord("preOrders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: timeInputValue("preOrderTime"), tableNumber: "", arrived: false}, function(record) {
+                document.getElementById("preOrderMembers").value = "";
+                document.getElementById("preOrderRemarks").value = "";
+                document.getElementById("preOrderTime").value = "";
+                for (poc = (preOrderNum) - 1; poc >= 0; poc--) {
+                    document.getElementById("preOrderDel"+poc).click();
+                }
+                preOrderNum = 0;
                 message("Your order is successfully submitted. But you must notify the workers that you have arrived. You can do that later after you have arrived at the restaurant.<br>After arriving the restaurant,<br>1. Open the app<br>2. Click 'View your orders'<br>3. Click on the order which has the label 'Pre Order' at the right of the button<br>4. Enter your table number and then click 'Arrived'", 10)
                 document.getElementById("homeBtn").click();
                 document.getElementById("barrier2").hidden = false;
@@ -810,6 +824,7 @@ document.getElementById("viewOrders").onclick = function() {
         viewOrderBtn.style.textAlign = "left"
         document.getElementById("viewOrderHolder").appendChild(viewOrderBtn)
         viewOrderBtn.onclick = function(btn) {
+            document.getElementById("viewOrderInfoTableNumber").value = ""
             let index = findInIds(yourOrders[JSON.parse(btn.target.value).type], JSON.parse(btn.target.value).id)
             document.getElementById("viewOrderInfoMembers").value = yourOrders[JSON.parse(btn.target.value).type][index].members;
             document.getElementById("viewOrderInfoRemarks").value = yourOrders[JSON.parse(btn.target.value).type][index].remarks;
@@ -822,6 +837,7 @@ document.getElementById("viewOrders").onclick = function() {
                 document.getElementById("viewOrderInfoTableNumber").value = yourOrders[JSON.parse(btn.target.value).type][index].tableNumber;
                 document.getElementById("viewOrderInfoTableNumber").disabled = true;
                 document.getElementById("viewOrderInfoTimeHolder").hidden = true;
+                document.getElementById("viewOrderInfoArrived").hidden = true;
             } else {
                 document.getElementById("viewOrderInfoTimeHolder").hidden = false;
                 document.getElementById("viewOrderInfoTime").value = yourOrders[JSON.parse(btn.target.value).type][index].time;
@@ -829,28 +845,34 @@ document.getElementById("viewOrders").onclick = function() {
                     document.getElementById("viewOrderInfoTableNumber").value = yourOrders[JSON.parse(btn.target.value).type][index].tableNumber;
                     document.getElementById("viewOrderInfoTableNumber").disabled = true;
                     document.getElementById("viewOrderInfoArrived").hidden = true;
+                    document.getElementById("viewOrderInfoQR").hidden = false;
                 } else {
                     document.getElementById("viewOrderInfoTableNumber").value = ""
                     document.getElementById("viewOrderInfoTableNumber").disabled = false;
                     document.getElementById("viewOrderInfoArrived").hidden = false;
+                    document.getElementById("viewOrderInfoQR").hidden = true;
                     document.getElementById("viewOrderInfoArrived").onclick = function() {
                         let conf = confirm("The workers will be notified that you have arrived and will be prepared to bring your order in the specified table. Click 'Ok' to continue.")
                         if (conf == true) {
                             if (document.getElementById("viewOrderInfoTableNumber").value != "") {
                                 document.getElementById("viewOrderInfoArrived").innerHTML = "Wait...";
                                 document.getElementById("viewOrderInfoArrived").disabled = true;
-                                document.getElementById("qrcode").innerHTML = ""
-                                updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, user: localStorage.username, orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), used: yourOrders[JSON.parse(btn.target.value).type][index].used, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
+                                document.getElementById("qrcode").innerHTML = "<img src=\"assets/Restaurant logo.png\" style=\"width: 25%; height: 25%; left: 37.5%; top: 37.5%; position: absolute; border-radius: 15px;\">"
+                                updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, userId: getUserId(), orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), used: yourOrders[JSON.parse(btn.target.value).type][index].used, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
                                     if (success == true) {
+                                        document.getElementById("viewOrderInfoArrived").innerHTML = "Arrived";
+                                        document.getElementById("viewOrderInfoArrived").disabled = false;;
                                         setScreen("orderQRScrn");
                                         document.getElementById("viewOrderInfoArrived").hidden = true;
                                         let ordersForQR = {
                                             userId: getUserId(),
                                             id: record.id,
+                                            tableNumber: record.tableNumber,
                                             members: record.members,
                                             orders: record.orders,
                                             remarks: record.remarks
                                         }
+                                        console.log(ordersForQR)
                                         new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                                         document.getElementById("saveOrderQRBtn").onclick = function() {
                                             download(record)
@@ -869,7 +891,7 @@ document.getElementById("viewOrders").onclick = function() {
             }
             document.getElementById("viewOrderInfoQR").onclick = function() {
                 setScreen("orderQRScrn")
-                document.getElementById("qrcode").innerHTML = ""
+                document.getElementById("qrcode").innerHTML = "<img src=\"assets/Restaurant logo.png\" style=\"width: 25%; height: 25%; left: 37.5%; top: 37.5%; position: absolute; border-radius: 15px;\">"
                 let ordersForQR = {
                     userId: getUserId(),
                     id: yourOrders[JSON.parse(btn.target.value).type][index].id,
@@ -878,6 +900,7 @@ document.getElementById("viewOrders").onclick = function() {
                     orders: yourOrders[JSON.parse(btn.target.value).type][index].orders,
                     remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks
                 }
+                console.log(ordersForQR)
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                 document.getElementById("saveOrderQRBtn").onclick = function() {
                     download(yourOrders[JSON.parse(btn.target.value).type][index])
