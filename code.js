@@ -58,15 +58,6 @@ function findInCreateDate(arra, valName) {
     });
     return(finder)
 }
-function findInCreateDate(arra, valName) {
-    let finder = arra.findIndex(function(element) {
-        if (element.createDate == valName) {
-            return true;
-        }
-        return false;
-    });
-    return(finder)
-}
 function findInIds(arra, valName) {
     let finder = arra.findIndex(function(element) {
         if (element.id == valName) {
@@ -115,7 +106,7 @@ function download(record) {
 function askUsername(msg, createorupdate) {
     let username = prompt(msg)
     if (username == null) {
-        askUsername("Enter a username to continue using the app\n*Please enter something", "Create")
+        askUsername("Enter your name to continue using the app\n*Please enter something", "Create")
     } else if ((username).trim() != "") {
         if ((username.length >= 3) && (username.length <= 25)) {
             if (containsLetter(username) == true) {
@@ -138,24 +129,33 @@ function askUsername(msg, createorupdate) {
                         }
                     } else {
                         if (records[findInUsername(records, username)].userId != getUserId()) {
-                            askUsername("Enter a username to continue using the app\n*Username already taken", "Create")
+                            askUsername("Enter your name to continue using the app\n*This name is already taken", "Create")
                         } else {
-                            notify("Cannot change username. New username is same as old one")
+                            notify("Cannot change your name. New name is same as old one")
                         }
                     }
                 });
             } else {
-                askUsername("Enter a username to continue using the app\n*Username must contain atleast one letter", "Create")
+                askUsername("Enter your name to continue using the app\n*Your name must contain atleast one letter", "Create")
             }
         } else {
-            askUsername("Enter a username to continue using the app\n*Username can only have 3 - 25 characters", "Create")
+            askUsername("Enter your name to continue using the app\n*Your name can only have 3 - 25 characters", "Create")
         }
     } else {
-        askUsername("Enter a username to continue using the app\n*Please enter something", "Create")
+        askUsername("Enter your name to continue using the app\n*Please enter something", "Create")
     }
 }
 function getFullDates() {
-    return((new Date().getDate()) + ":" + (parseInt(new Date().getMonth()) + 1) + ":" + (new Date().getFullYear()))
+    let dates = new Date();
+    let date = dates.getDate();
+    let month = parseInt(dates.getMonth()) + 1;
+    if (date < 10) {
+        date = "0" + date
+    }
+    if (month < 10) {
+        month = "0" + month
+    }
+    return(date + ":" + month + ":" + (dates.getFullYear()))
 }
 function message(placeHolder, enableSeconds) {
     let div = document.createElement("div")
@@ -199,7 +199,7 @@ function message(placeHolder, enableSeconds) {
                 ok.innerHTML = "OK";
                 ok.onclick = function() {
                     div.remove()
-                    document.getElementById("barrier2").hidden = false;
+                    document.getElementById("barrier2").hidden = true;
                 }
                 clearInterval(CD);
             }
@@ -271,15 +271,15 @@ setTimeout(function() {
         readRecords("users", {}, function(records) {
             setScreen("homeScrn")
             if (("username" in localStorage) != true) {
-                askUsername(`Enter a username to continue using the app
-*Username can only have 3 - 25 characters
-*Username must contain atleast one letter`, "Create")
+                askUsername(`Enter your name to continue using the app
+*Your name can only have 3 - 25 characters
+*Your name must contain atleast one letter`, "Create")
             } else {
                 readRecords("users", {}, function(records) {
                     if (((findInUsername(records, localStorage.username)) != -1)) {
                         if ((records[findInUsername(records, localStorage.username)].createDate) == getFullDates()) {
                             if (((records[findInUsername(records, localStorage.username)].userId) != getUserId())) {
-                                askUsername("Enter a username to continue using the app\n*Seems like your username is taken by someone else today. Please choose a new username or add some number after your username", "Create")        
+                                askUsername("Enter your name to continue using the app\n*Seems like your name is already taken by someone else today. Please choose another name or add some number after your name", "Create")        
                             }
                         }
                     } else {
@@ -417,9 +417,9 @@ document.getElementById("preOrder").onclick = function() {
 //Nav
 document.getElementById("navUsername").innerHTML = localStorage.username;
 document.getElementById("navChangeUsername").onclick = function() {
-    askUsername(`Enter the new username.
-*Username can only have 3 - 25 characters
-*Username must contain atleast one letter`, "Update")
+    askUsername(`Enter the new name.
+*Name can only have 3 - 25 characters
+*Name must contain atleast one letter`, "Update")
 }
 //Menu
 var menu;
@@ -545,10 +545,28 @@ document.getElementById("orderAdd").onclick = function() {
     orderOptTitle.hidden = true;
     orderOptTitle.innerHTML = "Order "+(orderNum+1)
     orderInp.appendChild(orderOptTitle);
-    for (o = 0; o < menu.length; o++) {
-        let orderOpt = document.createElement("option");
-        orderOpt.innerHTML = menu[o].item;
-        orderInp.appendChild(orderOpt);
+    var menuTypes = []
+    for (let mt = 0; mt < menu.length; mt++) {
+        if (menuTypes.indexOf(menu[mt].type) == -1) {
+            menuTypes.push(menu[mt].type);
+        }
+    }
+    for (let t = 0; t < menuTypes.length; t++) {
+        let menuDropDownGroup = document.createElement("optgroup");
+        menuDropDownGroup.label = menuTypes[t];
+        let menuWithType = [];
+        for (mwt = 0; mwt < menu.length; mwt++) {
+            if (menu[mwt].type == menuTypes[t]) {
+                menuWithType.push(menu[mwt]);
+            }
+        }
+        for (g = 0; g < menuWithType.length; g++) {
+            let menuDropDownOpt = document.createElement("option");
+            menuDropDownOpt.innerHTML = menuWithType[g].item + " - " + menuWithType[g].price
+            menuDropDownOpt.value = menuWithType[g].item
+            menuDropDownGroup.appendChild(menuDropDownOpt);
+        }
+        orderInp.appendChild(menuDropDownGroup)
     }
     let orderQuantity = document.createElement("input");
     orderQuantity.id = "orderQuantity"+orderNum;
@@ -637,10 +655,11 @@ document.getElementById("orderSubmitBtn").onclick = function() {
                 let ordersForQR = {
                     userId: getUserId(),
                     id: record.id,
-                    tableNumber: document.getElementById("orderTableNumber").value,
-                    members: document.getElementById("orderMembers").value,
-                    orders: orderList,
-                    remarks: document.getElementById("orderRemarks").value
+                    tableNumber: record.tableNumber,
+                    members: record.members,
+                    orders: record.orders,
+                    remarks: record.remarks,
+                    type: "Order"
                 }
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                 document.getElementById("saveOrderQRBtn").onclick = function() {
@@ -690,10 +709,28 @@ document.getElementById("preOrderAdd").onclick = function() {
     preOrderOptTitle.hidden = true;
     preOrderOptTitle.innerHTML = "Order "+(preOrderNum+1)
     preOrderInp.appendChild(preOrderOptTitle);
-    for (o = 0; o < menu.length; o++) {
-        let preOrderOpt = document.createElement("option");
-        preOrderOpt.innerHTML = menu[o].item;
-        preOrderInp.appendChild(preOrderOpt);
+    var menuTypes = []
+    for (let mt = 0; mt < menu.length; mt++) {
+        if (menuTypes.indexOf(menu[mt].type) == -1) {
+            menuTypes.push(menu[mt].type);
+        }
+    }
+    for (let t = 0; t < menuTypes.length; t++) {
+        let menuDropDownGroup = document.createElement("optgroup");
+        menuDropDownGroup.label = menuTypes[t];
+        let menuWithType = [];
+        for (mwt = 0; mwt < menu.length; mwt++) {
+            if (menu[mwt].type == menuTypes[t]) {
+                menuWithType.push(menu[mwt]);
+            }
+        }
+        for (g = 0; g < menuWithType.length; g++) {
+            let menuDropDownOpt = document.createElement("option");
+            menuDropDownOpt.innerHTML = menuWithType[g].item + " - " + menuWithType[g].price
+            menuDropDownOpt.value = menuWithType[g].item
+            menuDropDownGroup.appendChild(menuDropDownOpt);
+        }
+        preOrderInp.appendChild(menuDropDownGroup)
     }
     let preOrderQuantity = document.createElement("input");
     preOrderQuantity.id = "preOrderQuantity"+preOrderNum;
@@ -872,12 +909,13 @@ document.getElementById("viewOrders").onclick = function() {
                                         setScreen("orderQRScrn");
                                         document.getElementById("viewOrderInfoArrived").hidden = true;
                                         let ordersForQR = {
-                                            userId: getUserId(),
+                                            userId: record.userId,
                                             id: record.id,
                                             tableNumber: record.tableNumber,
                                             members: record.members,
                                             orders: record.orders,
-                                            remarks: record.remarks
+                                            remarks: record.remarks,
+                                            type: "Order"
                                         }
                                         new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                                         document.getElementById("saveOrderQRBtn").onclick = function() {
@@ -904,7 +942,8 @@ document.getElementById("viewOrders").onclick = function() {
                     tableNumber: yourOrders[JSON.parse(btn.target.value).type][index].tableNumber,
                     members: yourOrders[JSON.parse(btn.target.value).type][index].members,
                     orders: yourOrders[JSON.parse(btn.target.value).type][index].orders,
-                    remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks
+                    remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks,
+                    type: yourOrders[JSON.parse(btn.target.value).type][index].type
                 }
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
                 document.getElementById("saveOrderQRBtn").onclick = function() {
@@ -941,11 +980,19 @@ document.getElementById("feedbackSubmit").onclick = function() {
     if ((document.getElementById("feedbackInput").value).trim() != "") {
         document.getElementById("feedbackSubmit").innerHTML = "Submitting"
         document.getElementById("feedbackSubmit").disabled = true;
-        createRecord("feedbacks", {userId: getUserId(), message: document.getElementById("feedbackInput").value}, function(record) {
+        let feedbackUsername;
+        if (document.getElementById("feedbackUser").checked == true) {
+            feedbackUsername = NaN;
+        } else {
+            feedbackUsername = localStorage.username;
+        }
+        createRecord("feedbacks", {userId: getUserId(), message: document.getElementById("feedbackInput").value, username: feedbackUsername}, function(record) {
             document.getElementById("feedbackSubmit").innerHTML = "Submit"
             document.getElementById("feedbackSubmit").disabled = false;
             notify("Feedback/Complaint successfully submitted")
             document.getElementById("feedbackInput").value = "";
         });
+    } else {
+        notify("Please enter something");
     }
 }
