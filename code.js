@@ -94,15 +94,6 @@ function notify(msg) {
         animation("notify", "notifyOut", "1.5s")
     }, 2000)
 }
-function download(record) {
-    html2canvas(document.getElementById("holder")).then(function(canvas) {
-        const image = canvas.toDataURL("image/png", 1.0);
-        const link = document.createElement("a");
-        link.download = "order"+record.id+".png";
-        link.href = image;
-        link.click();
-    });
-}
 function askUsername(msg, createorupdate) {
     let username = prompt(msg)
     if (username == null) {
@@ -231,17 +222,6 @@ function extractTime(time) {
     obj.ampm = extract[1].split(" ")[1]
     return(obj)
 }
-function time2seconds(time) {
-    let extract = extractTime(time)
-    let hour = extract.hour;
-    let minute = extract.minute;
-    if (extract.ampm == "pm") {
-        hour += 12
-    }
-    minute += hour * 60;
-    let second = minute * 60;
-    return(second)
-}
 function sortInAscending(arr) {
     arr.sort(function(a, b){return b-a});
 }
@@ -290,7 +270,8 @@ setTimeout(function() {
                 })
             }
             document.getElementById("homeMenuBtn").hidden = false;
-            var allCreateDates = [];
+            //Delete old accounts
+            let allCreateDates = [];
             for (let i = 0; i < records.length; i++) {
                 allCreateDates.push(records[i].createDate);
             }
@@ -322,7 +303,75 @@ setTimeout(function() {
                 deleteRecord("users", {id: records[indexes[di]].id}, function(success) {
                 });
             }
-        }) 
+        })
+        readRecords("orders", {}, function(records) {
+            let allCreateDates = [];
+            for (let i = 0; i < records.length; i++) {
+                allCreateDates.push(records[i].date);
+            }
+            function findOdds(arr, val) {
+                let odds = []
+                for (let o = 0; o < arr.length; o++) {
+                    if (arr[o] != val) {
+                        odds.push(arr[o])
+                    }
+                }
+                let filteredOdds = []
+                for (let fo = 0; fo < odds.length; fo++) {
+                    if (filteredOdds.indexOf(odds[fo]) == -1) {
+                        filteredOdds.push(odds[fo])
+                    }
+                }
+                return(filteredOdds)
+            }
+            let toDelDates = findOdds(allCreateDates, getFullDates())
+            let indexes = []
+            for (let d = 0; d < toDelDates.length; d++) {
+                for (i = 0; i < records.length; i++) {
+                    if (records[i].date == toDelDates[d]) {
+                        indexes.push(i);
+                    }
+                }
+            }
+            for (let di = 0; di < indexes.length; di++) {
+                deleteRecord("orders", {id: records[indexes[di]].id}, function(success) {
+                });
+            }
+        })
+        readRecords("preOrders", {}, function(records) {
+            let allCreateDates = [];
+            for (let i = 0; i < records.length; i++) {
+                allCreateDates.push(records[i].date);
+            }
+            function findOdds(arr, val) {
+                let odds = []
+                for (let o = 0; o < arr.length; o++) {
+                    if (arr[o] != val) {
+                        odds.push(arr[o])
+                    }
+                }
+                let filteredOdds = []
+                for (let fo = 0; fo < odds.length; fo++) {
+                    if (filteredOdds.indexOf(odds[fo]) == -1) {
+                        filteredOdds.push(odds[fo])
+                    }
+                }
+                return(filteredOdds)
+            }
+            let toDelDates = findOdds(allCreateDates, getFullDates())
+            let indexes = []
+            for (let d = 0; d < toDelDates.length; d++) {
+                for (i = 0; i < records.length; i++) {
+                    if (records[i].date == toDelDates[d]) {
+                        indexes.push(i);
+                    }
+                }
+            }
+            for (let di = 0; di < indexes.length; di++) {
+                deleteRecord("preOrders", {id: records[indexes[di]].id}, function(success) {
+                });
+            }
+        })
     } else {
         document.getElementById("noInternet").hidden = false;
     }
@@ -421,9 +470,21 @@ document.getElementById("navChangeUsername").onclick = function() {
 *Name can only have 3 - 25 characters
 *Name must contain atleast one letter`, "Update")
 }
+//Table numbers
+readRecords("tables", {}, function(records) {
+    let tableNumbers = JSON.parse(records[0].tableNumbers)
+    let tempSel = document.createElement("select");
+    for (let s = 0; s < tableNumbers.length; s++) {
+        let opt = document.createElement("option");
+        opt.innerHTML = tableNumbers[s];
+        tempSel.appendChild(opt);
+    }
+    document.getElementById("orderTableNumber").innerHTML = tempSel.innerHTML;
+    document.getElementById("viewOrderInfoTableNumber").innerHTML = tempSel.innerHTML;
+})
 //Menu
-var menu;
-readRecords("menu", {}, function(records) {
+function menuUpdate(records) {
+    document.getElementById("menuHolder").innerHTML = ""
     menu = records;
     var menuTypes = []
     for (mt = 0; mt < menu.length; mt++) {
@@ -502,7 +563,30 @@ readRecords("menu", {}, function(records) {
         document.getElementById("menuHolder").appendChild(table)
         document.getElementById("menuHolder").appendChild(document.createElement("br"));
     }
+    let menuDropDown = document.createElement("select");
+    for (let dd = 0; dd < records.length; dd++) {
+        let opt = document.createElement("option");
+        opt.innerHTML = records[dd].item + " - " + records[dd].price;
+        menuDropDown.appendChild(opt)
+    }
+}
+var menu;
+readRecords("menu", {}, function(records) {
+    menuUpdate(records)
 });
+onRecordEvent("menu", function(record, eventType) {
+    if (eventType == "create") {
+        menu.push(record);
+    }
+    if (eventType == "update") {
+        menu[findInIds(menu, record.id)].item = record.item;
+        menu[findInIds(menu, record.id)].price = record.price;
+    }
+    if (eventType == "delete") {
+        menu.splice(findInIds(menu, record.id), 1);
+    }
+    menuUpdate(menu)
+})
 //Order Screen
 function findInItem(arra, valName) {
     let finder = arra.findIndex(function(element) { 
@@ -653,18 +737,10 @@ document.getElementById("orderSubmitBtn").onclick = function() {
                 orderNum = 0;
                 setScreen("orderQRScrn")
                 let ordersForQR = {
-                    userId: getUserId(),
                     id: record.id,
-                    tableNumber: record.tableNumber,
-                    members: record.members,
-                    orders: record.orders,
-                    remarks: record.remarks,
                     type: "Order"
                 }
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
-                document.getElementById("saveOrderQRBtn").onclick = function() {
-                    download(record)
-                }
                 notify("Order successfullt submitted")
                 document.getElementById("orderSubmitBtn").innerHTML = "Submit"
                 document.getElementById("orderSubmitBtn").disabled = false;
@@ -909,18 +985,10 @@ document.getElementById("viewOrders").onclick = function() {
                                         setScreen("orderQRScrn");
                                         document.getElementById("viewOrderInfoArrived").hidden = true;
                                         let ordersForQR = {
-                                            userId: record.userId,
                                             id: record.id,
-                                            tableNumber: record.tableNumber,
-                                            members: record.members,
-                                            orders: record.orders,
-                                            remarks: record.remarks,
                                             type: "Order"
                                         }
                                         new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
-                                        document.getElementById("saveOrderQRBtn").onclick = function() {
-                                            download(record)
-                                        }
                                         notify("Workers have been notified")
                                     } else {
                                         notify("Failed. Please try again")
@@ -937,18 +1005,11 @@ document.getElementById("viewOrders").onclick = function() {
                 setScreen("orderQRScrn")
                 document.getElementById("qrcode").innerHTML = "<img src=\"assets/Restaurant logo.png\" style=\"width: 25%; height: 25%; left: 37.5%; top: 37.5%; position: absolute; border-radius: 15px;\">"
                 let ordersForQR = {
-                    userId: getUserId(),
                     id: yourOrders[JSON.parse(btn.target.value).type][index].id,
-                    tableNumber: yourOrders[JSON.parse(btn.target.value).type][index].tableNumber,
-                    members: yourOrders[JSON.parse(btn.target.value).type][index].members,
-                    orders: yourOrders[JSON.parse(btn.target.value).type][index].orders,
-                    remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks,
                     type: yourOrders[JSON.parse(btn.target.value).type][index].type
                 }
+                console.log(JSON.stringify(ordersForQR))
                 new QRCode(document.getElementById("qrcode"), JSON.stringify(ordersForQR))
-                document.getElementById("saveOrderQRBtn").onclick = function() {
-                    download(yourOrders[JSON.parse(btn.target.value).type][index])
-                }
             }
             setScreen("viewOrderInfoScrn")
         }
