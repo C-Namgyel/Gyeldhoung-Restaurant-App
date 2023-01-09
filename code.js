@@ -479,8 +479,8 @@ readRecords("tables", {}, function(records) {
         opt.innerHTML = tableNumbers[s];
         tempSel.appendChild(opt);
     }
-    document.getElementById("orderTableNumber").innerHTML = tempSel.innerHTML;
-    document.getElementById("viewOrderInfoTableNumber").innerHTML = tempSel.innerHTML;
+    document.getElementById("orderTableNumber").innerHTML = document.getElementById("orderTableNumber").innerHTML + tempSel.innerHTML;
+    document.getElementById("viewOrderInfoTableNumber").innerHTML = document.getElementById("viewOrderInfoTableNumber").innerHTML + tempSel.innerHTML;
 })
 //Menu
 function menuUpdate(records) {
