@@ -727,7 +727,7 @@ document.getElementById("orderSubmitBtn").onclick = function() {
             document.getElementById("orderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("orderSubmitBtn").disabled = true;
             document.getElementById("qrcode").innerHTML = "<img src=\"assets/Restaurant logo.png\" style=\"width: 25%; height: 25%; left: 37.5%; top: 37.5%; position: absolute; border-radius: 15px;\">"
-            createRecord("orders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), used: false, type: "Order", time: getCurrentTime()}, function(record) {
+            createRecord("orders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("orderMembers").value, tableNumber: document.getElementById("orderTableNumber").value, remarks: document.getElementById("orderRemarks").value, date: getFullDates(), status: "Queue", type: "Order", time: getCurrentTime()}, function(record) {
                 document.getElementById("orderTableNumberNull").selected = true;
                 document.getElementById("orderMembers").value = "";
                 document.getElementById("orderRemarks").value = "";
@@ -882,7 +882,7 @@ document.getElementById("preOrderSubmitBtn").onclick = function() {
             }
             document.getElementById("preOrderSubmitBtn").innerHTML = "Submitting"
             document.getElementById("preOrderSubmitBtn").disabled = true;
-            createRecord("preOrders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), used: false, type: "Pre Order", time: timeInputValue("preOrderTime"), tableNumber: "", arrived: false}, function(record) {
+            createRecord("preOrders", {userId: getUserId(), orders: JSON.stringify(orderList), members: document.getElementById("preOrderMembers").value, remarks: document.getElementById("preOrderRemarks").value, date: getFullDates(), status: "Queue", type: "Pre Order", time: timeInputValue("preOrderTime"), tableNumber: "", arrived: false}, function(record) {
                 document.getElementById("preOrderMembers").value = "";
                 document.getElementById("preOrderRemarks").value = "";
                 document.getElementById("preOrderTime").value = "";
@@ -978,7 +978,7 @@ document.getElementById("viewOrders").onclick = function() {
                                 document.getElementById("viewOrderInfoArrived").innerHTML = "Wait...";
                                 document.getElementById("viewOrderInfoArrived").disabled = true;
                                 document.getElementById("qrcode").innerHTML = "<img src=\"assets/Restaurant logo.png\" style=\"width: 25%; height: 25%; left: 37.5%; top: 37.5%; position: absolute; border-radius: 15px;\">"
-                                updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, userId: getUserId(), orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), used: yourOrders[JSON.parse(btn.target.value).type][index].used, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
+                                updateRecord("preOrders", {id:JSON.parse(btn.target.value).id, userId: getUserId(), orders: yourOrders[JSON.parse(btn.target.value).type][index].orders, members: yourOrders[JSON.parse(btn.target.value).type][index].members, remarks: yourOrders[JSON.parse(btn.target.value).type][index].remarks, date: getFullDates(), status: yourOrders[JSON.parse(btn.target.value).type][index].status, type: yourOrders[JSON.parse(btn.target.value).type][index].type, time: yourOrders[JSON.parse(btn.target.value).type][index].time, tableNumber: document.getElementById("viewOrderInfoTableNumber").value, arrived: true}, function(record, success) {
                                     if (success == true) {
                                         document.getElementById("viewOrderInfoArrived").innerHTML = "Arrived";
                                         document.getElementById("viewOrderInfoArrived").disabled = false;;
